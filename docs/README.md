@@ -2,21 +2,31 @@
 
 病人事件图谱是一种新的电子病历数据表示模型，定义了用于临床研究的医疗实体、医疗事件和事件之间的时序关系，能够解决不同医院异质电子病历的数据融合问题，为临床应用在大规模电子病历数据上开展提供了基础支撑。
 
+------
+
 ![](images\schema.png)
+
+------
 
 ### 介绍
 
 不同医院的电子病历数据在结构和内容上都存在较大差别，数据融合的困难阻碍了临床研究在大规模病历数据上的开展。另外现有工作大多聚焦在局部病历文本的结构化或与知识库的链接上，忽略了电子病历数据本身潜在的价值，如医疗事件的时序关系可以反映病人的健康变化，从而推断出病因或进行疗效分析。针对多源异质电子病历数据融合难的特点，我们提出了一种新的电子病历数据表示模型，并且展示了基于该模型来构建数据集的流程。为了证明本方法的有效性，我们使用多家医院部分严格脱敏后的电子病历数据构建了数据集，同时提供了在线访问该数据集的途径和查询示例。
 
+------
+
 ### 数据下载
 
 我们的示例数据集发布在[OpenKG](http://www.openkg.cn/)上供大家使用，如需使用全部数据请发送邮件（注明单位和使用目的）至615877848@qq.com。
+
+------
 
 ### 在线访问
 
 我们使用[Apache Fuseki](http://jena.apache.org/documentation/fuseki2/index.html)工具实现了SPARQL站点来访问[病人事件图谱](https://peg.ecustnlplab.com/dataset.html)。SPARQL站点提供了一个输入框用于用户输入SPARQL查询，点击执行按钮后在界面上会返回相应的结果。
 
 ![](images\online_query.png)
+
+------
 
 ### 查询示例
 
@@ -74,6 +84,38 @@ SPARQL前缀：
 
 + 例8（**有多少病人被诊断为冠心病，随后服用了卡普托利进行治疗，在服药期间球蛋白显示正常？**）
 
+  SPARQL：
+
+  `SELECT (COUNT(DISTINCT ?patient) AS ?patientCount) `
+
+  `WHERE {`
+
+  ` ?patient rdf:type peg-o:Patient .`
+
+  `?hospEvent rdf:type peg-o:HospitalizationEvent ; sem:hasActor ?patient .`
+
+  `?diagEvent rdf:type peg-o:DiagnosisEvent; sem:hasActor ?patient ; sem:hasActor ?disease .`
+
+  `?disease rdfs:label "冠心病" .`
+
+  `  ?drugEvent rdf:type peg-o:DrugEvent; sem:hasActor ?patient ; sem:hasActor ?drug .`
+
+  `?drug rdfs:label "卡普托利" .`
+
+  `?assayEvent rdf:type peg-o:AssayEvent; sem:hasActor ?patient; sem:hasActor ?assay; peg-o:assayPrompt "正常" .`
+
+  ` ?assay rdfs:label "球蛋白" .`
+
+  ` ?diagEvent peg-o:during ?hospEvent .`
+
+  `?drugEvent peg-o:after ?diagEvent .`
+
+  `?assayEvent peg-o:during ?drugEvent . }`
+
+  `GROUP BY ?patient`
+
+------
+
 ### 本体
 
 + 命名空间
@@ -82,12 +124,22 @@ SPARQL前缀：
 
 + 事件类
 
-  
+  `peg-o:VISIT_OCCURRENCE	rdf:type	sem:EventType`
+
+  `peg-o:ASSAY	rdf:type	sem:ActorType`
+
+  `peg-o:DISEASE	rdf:type	sem:ActorType`
+
+  `peg-o:DRUG	rdf:type	sem:ActorType`
+
+  `peg-o:SURGERY	rdf:type	sem:ActorType`
 
 + 事件类属性
 
 + 术语类
 
 + 术语类属性
+
+------
 
 ### 相关链接
