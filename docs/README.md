@@ -1,6 +1,6 @@
 # 病人事件图谱
 
-病人事件图谱是一种新的电子病历数据表示模型，定义了用于临床研究的医疗实体、医疗事件和事件之间的时序关系，能够解决不同医院异质电子病历的数据融合问题，为临床应用在大规模电子病历数据上开展提供了基础支撑。
+病人事件图谱是一种新的基于RDF的医疗观察性数据表示模型，可以清晰地表示临床检查、诊断、治疗等多种事件类型以及事件的时序关系。
 
 ------
 
@@ -10,135 +10,224 @@
 
 ### 介绍
 
-不同医院的电子病历数据在结构和内容上都存在较大差别，数据融合的困难阻碍了临床研究在大规模病历数据上的开展。另外现有工作大多聚焦在局部病历文本的结构化或与知识库的链接上，忽略了电子病历数据本身潜在的价值，如医疗事件的时序关系可以反映病人的健康变化，从而推断出病因或进行疗效分析。针对多源异质电子病历数据融合难的特点，我们提出了一种新的电子病历数据表示模型，并且展示了基于该模型来构建数据集的流程。为了证明本方法的有效性，我们使用多家医院部分严格脱敏后的电子病历数据构建了数据集，同时提供了在线访问该数据集的途径和查询示例。
+基于电子病历的观察性数据真实世界研究成为目前临床科研的热点。然而关系数据模型无法直接支撑起科研应用中医疗事件的时序关系表示以及知识融合的查询需求。针对上述问题，本文提出了一种新的基于RDF的医疗观察性数据表示模型，可以清晰地表示临床检查、诊断、治疗等多种事件类型以及事件的时序关系。对来源于医院的电子病历数据，使用**数据预处理**、**数据模式转换**、**时序关系构建**以及**知识融合**4个步骤建立事件图谱。具体地，使用三家上海三甲医院的电子病历数据，构建了包括**3个专科**、**173395个医疗事件**、**501335个事件时序关系**以及与**5313个知识库概念**链接的医疗数据集。
 
 ------
 
 ### 数据下载
 
-我们的示例数据集发布在[OpenKG](http://www.openkg.cn/)上供大家使用，如需使用全部数据请发送邮件（注明单位和使用目的）至615877848@qq.com。
+我们的示例数据集发布在[OpenKG](http://www.openkg.cn/)上供大家使用，如需使用全部数据请发送邮件（注明单位和使用目的）至ecust_lxl@126.com。
 
 ------
 
 ### 在线访问
 
-我们使用[Apache Fuseki](http://jena.apache.org/documentation/fuseki2/index.html)工具实现了SPARQL站点来访问[病人事件图谱](https://peg.ecustnlplab.com/dataset.html)。SPARQL站点提供了一个输入框用于用户输入SPARQL查询，点击执行按钮后在界面上会返回相应的结果。
+我们提供了SPARQL站点来访问[病人事件图谱](https://peg.ecustnlplab.com/dataset.html)。SPARQL站点提供了一个输入框用于用户输入SPARQL查询，点击执行按钮后在界面上会返回相应的结果。
 
 ![](images\online_query.png)
 
 ------
 
-### 查询示例
+### 查询语句
 
-SPARQL前缀：
+~~~~sparql前缀
+PREFIX sem: <http://semanticweb.cs.vu.nl/2009/11/sem/>
+PREFIX peg-o: <http://peg.ecustnlplab.com/ontology#>
+PREFIX peg-r: <http://peg.ecustnlplab.com/resource/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX sem: <http://semanticweb.cs.vu.nl/2009/11/sem/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX dsc: <http://dsc.nlp-bigdatalab.org:8086/>
+~~~~
 
-`PREFIX sem: <http://semanticweb.cs.vu.nl/2009/11/sem/>`
++ 例句一（**2012年和2013年高血压患者的年龄差异**）
+~~~~sparql
+  select ?eca1 ?eca2
+  where {
+      ?e1 sem:hasActor ?p1;
+          sem:hasObject ?disease ;
+          peg-o:condition_age ?eca1 ;
+          sem:hasTimeStamp ?et1.
+      filter(?et1 > "2012-01-01"^^xsd:date || ?et1 < "2012-12-31"^^xsd:date )
+      ?e2 sem:hasActor ?p2 ;
+          sem:hasObject ?disease ;
+          peg-o:condition_age ?eca2 ;
+           sem:hasTimeStamp ?et2.
+      filter(?et2 > "2013-01-01"^^xsd:date || ?et2 < "2013-12-31"^^xsd:date )
+      ?disease rdfs:label "高血压病"}
+~~~~
 
-`PREFIX peg-o: <http://peg.ecustnlplab.com/ontology#> `
++ 例句二（**患有双侧膝关节炎后血脂紊乱的患者的平均年龄**）
+~~~~sparql
+select ?age
+where {
+      ?p peg-o:birthdate ?p_birthdate .
+      ?e1 sem:hasActor ?p;
+          sem:hasObject ?disease .
+      ?disease rdfs:label "双侧膝关节炎" .
+  
+      ?e2 sem:hasActor ?p ;
+          sem:hasObject ?assay ;
+          peg-o:measurement_prompt "紊乱" ;
+          sem:hasTimeStamp ?et2.
+      ?assay rdfs:label "血脂" .
+      ?e2 peg-o:after ?e1 .
+      bind(year(?et2)-year(?p_birthdate) as ?age)
+}
+~~~~
 
-`PREFIX peg-r: <http://peg.ecustnlplab.com/resource/>`
++ 例句三（**同时被诊断为咳嗽和风寒外袭的患者住了多少次院**）
+~~~~sparql
+SELECT  (count(?e3)as ?e3_count)
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasObject ?disease1 .
+	?e2 sem:hasActor ?patient ;
+        sem:hasObject ?disease2 .
+  	?e3 sem:eventType peg-o:VISIT_EVENT ;
+  		sem:hasActor ?patient  .
+	?disease1 rdfs:label "咳嗽" .
+	?disease2 rdfs:label "风寒外袭" .
+  	?e1 peg-o:concurrent ?e2 .
+}
+~~~~
 
++ 例句四（**患有冠心病且患有不稳定性心绞痛的人数**）
+~~~~sparql
+SELECT  (count(?patient)as ?patient_count)
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasObject ?disease1 .
+	?e2 sem:hasActor ?patient ;
+        sem:hasObject ?disease2 .
+	?disease1 rdfs:label "冠心病" .
+	?disease2 rdfs:label "不稳定性心绞痛" .
+  	?e1 peg-o:concurrent ?e2 .
+}
+~~~~
 
++ 例句五（**首次患有冠心病，1年内又首次被诊断为气阴两虚证的患者的红细胞压积检验结果**）
+~~~~sparql
+SELECT ?patient ?measurement_result
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t1 ;
+        peg-o:first_condition true ;
+        sem:hasObject ?disease1 .
+	?e2 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t2 ;
+        peg-o:first_condition true ;
+        sem:hasObject ?disease2 .
+	?e3 sem:hasActor ?patient ;
+        sem:hasObject ?assay ;
+        peg-o:measurement_result ?measurement_result ;
+        sem:hasTimeStamp ?t3 .
+	?disease1 rdfs:label "冠心病" .
+  	?assay rdfs:label "红细胞压积" .
+	?disease2 rdfs:label "气阴两虚证" .
+	filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<12) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
+}
+~~~~
 
-+ 例1（**患有2型糖尿病和冠心病患者的性别比例**）
++ 例句六（**患有2型糖尿病和慢性心衰的患者的血小板分布宽度的结果**）
+~~~~sparql
+SELECT ?patient ?measurement_result
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasObject ?disease1 .
+	?e2 sem:hasActor ?patient ;
+        sem:hasObject ?disease2 .
+	?disease1 rdfs:label "2型糖尿病" .	
+	?disease2 rdfs:label "慢性心衰" .
+	?e3 sem:hasActor ?patient ;
+        sem:hasObject ?assay ;
+        peg-o:measurement_result ?measurement_result .
+  	?assay rdfs:label "血小板分布宽度" .
+}
+~~~~
 
-  SPARQL：
-
-+ 例2（**被诊断位高血压性心脏病后又患有心肾阳虚证的病人**）
-
-  SPARQL：
-
-+ 例3（**服用安络血片期间，糖尿病病人尿素氮的变化**）
-
-  SPARQL：
-
-+ 例4（**患有气阴两虚证的患者使用利多卡因针后淋巴细胞的平均值**）
-
-  SPARQL：
-
-+ 例5（**被诊断为II型呼衰且死亡的患者**）
-
-  SPARQL：
-
-+ 例6（**患有中风病后服用了开博通片进行治疗，之后又被诊断为脑栓塞且死亡的患者**）
-
-  SPARQL：
-
-+ 例7（**患有胃癌，服用了优福定片的女性患者**）
-
-  SPARQL：
-
-  `SELECT (COUNT(DISTINCT ?patient) AS ?patientCount)`
-
-  `WHERE { `
-
-  ` ?patient rdf:type peg-o:Patient ; peg-o:gender "女" .`
-
-  `?diagEvent rdf:type peg-o:DiagnosisEvent ; sem:hasActor ?patient; sem:hasActor ?disease .`
-
-  `?disease rdfs:label "胃癌" .`
-
-  `?drugEvent rdf:type peg-o:DrugEvent; sem:hasActor ?patient; sem:hasActor ?drug .`
-
-  ` ?drug rdfs:label "优福定片" .}`
-
-+ 例8（**有多少病人被诊断为冠心病，随后服用了卡普托利进行治疗，在服药期间球蛋白显示正常？**）
-
-  SPARQL：
-
-  `SELECT (COUNT(DISTINCT ?patient) AS ?patientCount) `
-
-  `WHERE {`
-
-  ` ?patient rdf:type peg-o:Patient .`
-
-  `?hospEvent rdf:type peg-o:HospitalizationEvent ; sem:hasActor ?patient .`
-
-  `?diagEvent rdf:type peg-o:DiagnosisEvent; sem:hasActor ?patient ; sem:hasActor ?disease .`
-
-  `?disease rdfs:label "冠心病" .`
-
-  `  ?drugEvent rdf:type peg-o:DrugEvent; sem:hasActor ?patient ; sem:hasActor ?drug .`
-
-  `?drug rdfs:label "卡普托利" .`
-
-  `?assayEvent rdf:type peg-o:AssayEvent; sem:hasActor ?patient; sem:hasActor ?assay; peg-o:assayPrompt "正常" .`
-
-  ` ?assay rdfs:label "球蛋白" .`
-
-  ` ?diagEvent peg-o:during ?hospEvent .`
-
-  `?drugEvent peg-o:after ?diagEvent .`
-
-  `?assayEvent peg-o:during ?drugEvent . }`
-
-  `GROUP BY ?patient`
++ 例句七（**在服用格华止片的六个月内，2型糖尿病患者的糖类抗原125变化趋势**）
+~~~~sparql
+SELECT ?patient  ?measurement_result
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t1 ;
+        sem:hasObject ?drug .
+	?e2 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t2 ;
+        sem:hasObject ?disease1 .
+	?disease1 rdfs:label "2型糖尿病" .
+  	?drug rdfs:label "格华止片" .
+	filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<6) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
+	?e3 sem:hasActor ?patient ;
+           sem:hasObject ?assay ;
+           peg-o:measurement_result ?measurement_result ;
+           sem:hasTimeStamp ?t3  .
+  	?assay rdfs:label "糖类抗原125" .
+}
+~~~~
++ 例句八（**肝肾不足证的患者服用哪些ACEI类药期间血红蛋白水平正常**）
+~~~~sparql
+SELECT ?drugname
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasObject ?disease1 .
+  	?disease1 rdfs:label "肝肾不足证" .
+  	?e2 sem:hasActor ?patient ;
+        sem:hasObject ?drug ;
+        sem:hasBeginTimeStamp ?t1 ;
+        sem:hasEndTimeStamp ?t2 .
+  	?drug rdfs:label ?drugname ;
+          peg-o:isHyponymOf dsc:ACEI类药 .
+	?e3 sem:hasActor ?patient ;
+        sem:hasObject ?assay ;
+        sem:hasTimeStamp ?t3 ;
+        peg-o:measurement_prompt "正常" .
+   	?assay rdfs:label "血红蛋白" .
+  	 ?e3 peg-o:during ?e2 .
+}
+~~~~
++ 例句九（**被诊断为肥厚性梗阻性心肌病经过药物治疗并且好转的患者**）
+~~~~sparql
+SELECT distinct ?patient
+WHERE{
+	?e1 sem:hasActor ?patient .
+	?e2 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t2 ;
+        sem:hasObject ?disease1 .
+	?disease1 rdfs:label "肥厚性梗阻性心肌病" .
+  	?e2 peg-o:situation "好转" .
+}
+~~~~
++ 例句十（**肝肾不足证的患者服用哪些ACEI类药期间血红蛋白水平正常**）
+~~~~sparql
+SELECT (count(?patient)as ?patient_count)
+WHERE{
+	?e1 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t1 ;
+        sem:hasObject ?disease1 .
+	?e2 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t2 ;
+        sem:hasObject ?disease2 .
+	?disease1 rdfs:label "心衰病" .
+    ?disease2 rdfs:label "慢性心力衰竭急性加重" .
+ 	filter(((year(?t1)-year(?t3))*12+(month(?t1)-month(?t3))>0)&&((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
+	?e3 sem:hasActor ?patient ;
+        sem:hasObject ?procedure ;
+        sem:hasTimeStamp ?t3  .
+  	?procedure rdfs:label "心脏临时性起博器植入术".
+}
+~~~~
+<a href="examples.txt" target="_blank">全部问题</a>
 
 ------
 
 ### 本体
 
-+ 命名空间
++ 
 
-  http://peg.ecustnlplab.com/ontology#
-
-+ 事件类
-
-  `peg-o:VISIT_OCCURRENCE	rdf:type	sem:EventType`
-
-  `peg-o:ASSAY	rdf:type	sem:ActorType`
-
-  `peg-o:DISEASE	rdf:type	sem:ActorType`
-
-  `peg-o:DRUG	rdf:type	sem:ActorType`
-
-  `peg-o:SURGERY	rdf:type	sem:ActorType`
-
-+ 事件类属性
-
-+ 术语类
-
-+ 术语类属性
 
 ------
 
