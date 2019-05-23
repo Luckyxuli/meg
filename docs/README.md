@@ -98,7 +98,7 @@ WHERE{
   		sem:hasActor ?patient  .
 }
 
-																execute time: 11.302s
+																execute time: 0.020s
 ~~~~
 
 + 例句四（**患有冠心病且患有不稳定性心绞痛的人数**）
@@ -146,19 +146,19 @@ WHERE{
 ~~~~sparql
 SELECT ?patient ?measurement_result
 WHERE{
+    ?disease1 rdfs:label "2型糖尿病" .
+    ?disease2 rdfs:label "慢性心衰" .
+    ?assay rdfs:label "血小板分布宽度" .
 	?e1 sem:hasActor ?patient ;
         sem:hasObject ?disease1 .
 	?e2 sem:hasActor ?patient ;
         sem:hasObject ?disease2 .
-	?disease1 rdfs:label "2型糖尿病" .	
-	?disease2 rdfs:label "慢性心衰" .
 	?e3 sem:hasActor ?patient ;
         sem:hasObject ?assay ;
         peg-o:measurement_result ?measurement_result .
-  	?assay rdfs:label "血小板分布宽度" .
 }
 
-																execute time: 16.489s
+																execute time: 7.343s
 ~~~~
 
 + 例句七（**在服用格华止片的六个月内，2型糖尿病患者的糖类抗原125变化趋势**）
