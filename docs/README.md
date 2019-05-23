@@ -44,19 +44,22 @@ PREFIX dsc: <http://dsc.nlp-bigdatalab.org:8086/>
 
 + 例句一（**2012年和2013年高血压患者的年龄差异**）
 ~~~~sparql
-  select ?eca1 ?eca2
+  select  ?e1 ?eca1 ?e2 ?eca2
   where {
       ?e1 sem:hasActor ?p1;
           sem:hasObject ?disease ;
           peg-o:condition_age ?eca1 ;
           sem:hasTimeStamp ?et1.
-      filter(?et1 > "2012-01-01"^^xsd:date || ?et1 < "2012-12-31"^^xsd:date )
+      filter(?et1 > "2012-01-01"^^xsd:date || ?et1 < "2012-12-31"^^xsd:date)
       ?e2 sem:hasActor ?p2 ;
           sem:hasObject ?disease ;
           peg-o:condition_age ?eca2 ;
-           sem:hasTimeStamp ?et2.
+          sem:hasTimeStamp ?et2.
       filter(?et2 > "2013-01-01"^^xsd:date || ?et2 < "2013-12-31"^^xsd:date )
-      ?disease rdfs:label "高血压病"}
+      ?disease rdfs:label "高血压病"
+  }
+
+																execute time: 0.045s
 ~~~~
 
 + 例句二（**患有双侧膝关节炎后血脂紊乱的患者的平均年龄**）
@@ -76,22 +79,26 @@ where {
       ?e2 peg-o:after ?e1 .
       bind(year(?et2)-year(?p_birthdate) as ?age)
 }
+
+																execute time: 0.022s
 ~~~~
 
 + 例句三（**同时被诊断为咳嗽和风寒外袭的患者住了多少次院**）
 ~~~~sparql
 SELECT  (count(?e3)as ?e3_count)
 WHERE{
+    ?disease1 rdfs:label "咳嗽" .
+    ?disease2 rdfs:label "风寒外袭" .
 	?e1 sem:hasActor ?patient ;
         sem:hasObject ?disease1 .
 	?e2 sem:hasActor ?patient ;
         sem:hasObject ?disease2 .
-  	?e3 sem:eventType peg-o:VISIT_EVENT ;
-  		sem:hasActor ?patient  .
-	?disease1 rdfs:label "咳嗽" .
-	?disease2 rdfs:label "风寒外袭" .
   	?e1 peg-o:concurrent ?e2 .
+    ?e3 sem:eventType peg-o:VISIT_EVENT ;
+  		sem:hasActor ?patient  .
 }
+
+																execute time: 11.302s
 ~~~~
 
 + 例句四（**患有冠心病且患有不稳定性心绞痛的人数**）
@@ -106,6 +113,8 @@ WHERE{
 	?disease2 rdfs:label "不稳定性心绞痛" .
   	?e1 peg-o:concurrent ?e2 .
 }
+
+																execute time: 0.030s
 ~~~~
 
 + 例句五（**首次患有冠心病，1年内又首次被诊断为气阴两虚证的患者的红细胞压积检验结果**）
@@ -129,6 +138,8 @@ WHERE{
 	?disease2 rdfs:label "气阴两虚证" .
 	filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<12) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
 }
+           
+																execute time: 0.170s
 ~~~~
 
 + 例句六（**患有2型糖尿病和慢性心衰的患者的血小板分布宽度的结果**）
@@ -146,27 +157,31 @@ WHERE{
         peg-o:measurement_result ?measurement_result .
   	?assay rdfs:label "血小板分布宽度" .
 }
+
+																execute time: 16.489s
 ~~~~
 
 + 例句七（**在服用格华止片的六个月内，2型糖尿病患者的糖类抗原125变化趋势**）
 ~~~~sparql
 SELECT ?patient  ?measurement_result
 WHERE{
-	?e1 sem:hasActor ?patient ;
-        sem:hasTimeStamp ?t1 ;
-        sem:hasObject ?drug .
-	?e2 sem:hasActor ?patient ;
-        sem:hasTimeStamp ?t2 ;
-        sem:hasObject ?disease1 .
-	?disease1 rdfs:label "2型糖尿病" .
-  	?drug rdfs:label "格华止片" .
-	filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<6) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
-	?e3 sem:hasActor ?patient ;
-           sem:hasObject ?assay ;
-           peg-o:measurement_result ?measurement_result ;
-           sem:hasTimeStamp ?t3  .
-  	?assay rdfs:label "糖类抗原125" .
+	  ?disease1 rdfs:label "2型糖尿病" .
+      ?drug rdfs:label "格华止片" .
+      ?assay rdfs:label "糖类抗原125" .
+      ?e1 sem:hasActor ?patient ;
+          sem:hasTimeStamp ?t1 ;
+          sem:hasObject ?drug .
+      ?e2 sem:hasActor ?patient ;
+          sem:hasTimeStamp ?t2 ;
+          sem:hasObject ?disease1 .
+      ?e3 sem:hasActor ?patient ;
+          sem:hasObject ?assay ;
+          peg-o:measurement_result ?measurement_result ;
+          sem:hasTimeStamp ?t3  .
+      filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<6) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
 }
+          
+																execute time: 0.026s
 ~~~~
 + 例句八（**肝肾不足证的患者服用哪些ACEI类药期间血红蛋白水平正常**）
 ~~~~sparql
@@ -188,37 +203,49 @@ WHERE{
    	?assay rdfs:label "血红蛋白" .
   	 ?e3 peg-o:during ?e2 .
 }
+
+																execute time: 0.218s
 ~~~~
 + 例句九（**被诊断为肥厚性梗阻性心肌病经过药物治疗并且好转的患者**）
 ~~~~sparql
 SELECT distinct ?patient
 WHERE{
-	?e1 sem:hasActor ?patient .
-	?e2 sem:hasActor ?patient ;
+    ?disease1 rdfs:label "二尖瓣重度关闭不全" .
+    ?e1 sem:hasActor ?patient ;
         sem:hasTimeStamp ?t2 ;
         sem:hasObject ?disease1 .
-	?disease1 rdfs:label "肥厚性梗阻性心肌病" .
-  	?e2 peg-o:situation "好转" .
+    ?e2 sem:hasObject ?disease1 ;
+        peg-o:situation "好转" ;
+        sem:hasTimeStamp ?t3 .
+  	?e3 sem:eventType peg-o:TREATMENT_EVENT ;
+        sem:hasActor ?patient ;
+        sem:hasBeginTimeStamp ?t1 .
+  	?e1 peg-o:before ?e3 .
+  	?e3 peg-o:before ?e2 .
 }
+
+																execute time: 0.007s
 ~~~~
 + 例句十（**肝肾不足证的患者服用哪些ACEI类药期间血红蛋白水平正常**）
 ~~~~sparql
 SELECT (count(?patient)as ?patient_count)
 WHERE{
-	?e1 sem:hasActor ?patient ;
-        sem:hasTimeStamp ?t1 ;
-        sem:hasObject ?disease1 .
-	?e2 sem:hasActor ?patient ;
-        sem:hasTimeStamp ?t2 ;
-        sem:hasObject ?disease2 .
-	?disease1 rdfs:label "心衰病" .
-    ?disease2 rdfs:label "慢性心力衰竭急性加重" .
- 	filter(((year(?t1)-year(?t3))*12+(month(?t1)-month(?t3))>0)&&((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
-	?e3 sem:hasActor ?patient ;
+    ?e3 sem:hasActor ?patient ;
         sem:hasObject ?procedure ;
         sem:hasTimeStamp ?t3  .
   	?procedure rdfs:label "心脏临时性起博器植入术".
+    ?disease1 rdfs:label "心衰病" .
+	?e1 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t1 ;
+        sem:hasObject ?disease1 .
+    ?disease2 rdfs:label "慢性心力衰竭急性加重" .
+	?e2 sem:hasActor ?patient ;
+        sem:hasTimeStamp ?t2 ;
+        sem:hasObject ?disease2 .
+ 	filter(((year(?t1)-year(?t3))*12+(month(?t1)-month(?t3))>0)&&((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
 }
+
+																execute time: 0.350s
 ~~~~
 <a href="examples.txt" target="_blank">全部问题</a>
 
@@ -228,7 +255,7 @@ WHERE{
 
 + 
 
-
 ------
 
 ### 相关链接
+
