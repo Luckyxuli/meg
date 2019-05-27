@@ -16,7 +16,7 @@
 
 ### 数据下载
 
-我们的示例数据集发布在[OpenKG](http://www.openkg.cn/)上供大家使用，如需使用全部数据请发送邮件（注明单位和使用目的）至ecust_lxl@126.com。
+我们的示例数据集发布在[OpenKG](http://www.openkg.cn/dataset/peg)上供大家使用，如需使用全部数据请发送邮件（注明单位和使用目的）至ecust_lxl@126.com。
 
 ------
 
@@ -42,40 +42,39 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX dsc: <http://dsc.nlp-bigdatalab.org:8086/>
 ~~~~
 
-+ 例句一（**2012年和2013年高血压患者的年龄差异**）
++ 例句一（**2012年和2013年糖尿病患者的年龄差异**）
 ~~~~sparql
-  select  ?e1 ?eca1 ?e2 ?eca2
+  construct{ "2012年" peg-o:condition_age ?eca1 . "2013年" peg-o:condition_age  ?eca2}
   where {
-      ?e1 sem:hasActor ?p1;
+      ?disease peg-o:isHyponymOf dsc:糖尿病 .
+      ?e1 sem:hasActor ?p1 ;
           sem:hasObject ?disease ;
           peg-o:condition_age ?eca1 ;
-          sem:hasTimeStamp ?et1.
+          sem:hasTimeStamp ?et1 .
       filter(?et1 > "2012-01-01"^^xsd:date || ?et1 < "2012-12-31"^^xsd:date)
       ?e2 sem:hasActor ?p2 ;
           sem:hasObject ?disease ;
           peg-o:condition_age ?eca2 ;
-          sem:hasTimeStamp ?et2.
+          sem:hasTimeStamp ?et2 .
       filter(?et2 > "2013-01-01"^^xsd:date || ?et2 < "2013-12-31"^^xsd:date )
-      ?disease rdfs:label "高血压病"
   }
 
-																execute time: 0.045s
+																execute time: 2.251s
 ~~~~
 
 + 例句二（**患有双侧膝关节炎后血脂紊乱的患者的平均年龄**）
 ~~~~sparql
 select ?age
 where {
-      ?p peg-o:birthdate ?p_birthdate .
-      ?e1 sem:hasActor ?p;
-          sem:hasObject ?disease .
       ?disease rdfs:label "双侧膝关节炎" .
-  
+      ?p peg-o:birthdate ?p_birthdate .
+      ?e1 sem:hasActor ?p ;
+          sem:hasObject ?disease .
+      ?assay rdfs:label "血脂" .
       ?e2 sem:hasActor ?p ;
           sem:hasObject ?assay ;
           peg-o:measurement_prompt "紊乱" ;
-          sem:hasTimeStamp ?et2.
-      ?assay rdfs:label "血脂" .
+          sem:hasTimeStamp ?et2 .
       ?e2 peg-o:after ?e1 .
       bind(year(?et2)-year(?p_birthdate) as ?age)
 }
@@ -117,7 +116,7 @@ WHERE{
 																execute time: 0.030s
 ~~~~
 
-+ 例句五（**首次患有冠心病，1年内又首次被诊断为气阴两虚证的患者的红细胞压积检验结果**）
++ 例句五（**首次患有冠心病，1年内又被诊断为气阴两虚证的患者的红细胞压积检验结果**）
 ~~~~sparql
 SELECT ?patient ?measurement_result
 WHERE{
@@ -127,7 +126,6 @@ WHERE{
         sem:hasObject ?disease1 .
 	?e2 sem:hasActor ?patient ;
         sem:hasTimeStamp ?t2 ;
-        peg-o:first_condition true ;
         sem:hasObject ?disease2 .
 	?e3 sem:hasActor ?patient ;
         sem:hasObject ?assay ;
@@ -144,7 +142,7 @@ WHERE{
 
 + 例句六（**患有2型糖尿病和慢性心衰的患者的血小板分布宽度的结果**）
 ~~~~sparql
-SELECT ?patient ?measurement_result
+SELECT DISTINCT ?patient ?measurement_result
 WHERE{
     ?disease1 rdfs:label "2型糖尿病" .
     ?disease2 rdfs:label "慢性心衰" .
@@ -158,10 +156,10 @@ WHERE{
         peg-o:measurement_result ?measurement_result .
 }
 
-																execute time: 7.343s
+																execute time: 5.420s
 ~~~~
 
-+ 例句七（**在服用格华止片的六个月内，2型糖尿病患者的糖类抗原125变化趋势**）
++ 例句七（**在服用格华止片期间，2型糖尿病患者的糖类抗原125变化趋势**）
 ~~~~sparql
 SELECT ?patient  ?measurement_result
 WHERE{
@@ -172,13 +170,11 @@ WHERE{
           sem:hasTimeStamp ?t1 ;
           sem:hasObject ?drug .
       ?e2 sem:hasActor ?patient ;
-          sem:hasTimeStamp ?t2 ;
           sem:hasObject ?disease1 .
       ?e3 sem:hasActor ?patient ;
           sem:hasObject ?assay ;
           peg-o:measurement_result ?measurement_result ;
-          sem:hasTimeStamp ?t3  .
-      filter(((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))<6) && ((year(?t2)-year(?t1))*12+(month(?t2)-month(?t1))>0))
+      ?e2 peg-o:during ?e3 .
 }
           
 																execute time: 0.026s
@@ -226,7 +222,7 @@ WHERE{
 
 																execute time: 0.007s
 ~~~~
-+ 例句十（**肝肾不足证的患者服用哪些ACEI类药期间血红蛋白水平正常**）
++ 例句十（**进行过心脏临时性起博器植入术之后，心衰病患者慢性心力衰竭急性加重的人次**）
 ~~~~sparql
 SELECT (count(?patient)as ?patient_count)
 WHERE{
@@ -247,15 +243,14 @@ WHERE{
 
 																execute time: 0.350s
 ~~~~
-<a href="examples.txt" target="_blank">全部问题</a>
-
-------
-
-### 本体
-
-+ 
+<a href="questions.txt" target="_blank">全部问题</a>
 
 ------
 
 ### 相关链接
+
+- <a href="http://www.openkg.cn/dataset/symptom-in-chinese" target="_blank">中文医疗知识库</a>
+- <a href="https://www.ohdsi.org/data-standardization/the-common-data-model/" target="_blank">OHDIS-CDM</a>
+- <a href="http://openrefine.org/" target="_blank">OpenRefine</a>
+- <a href="<https://www.w3.org/TR/r2rml/>" target="_blank">R2RML</a>
 
